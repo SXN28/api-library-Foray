@@ -8,6 +8,7 @@ import {
   Post,
   Route,
   Tags,
+  Security,
 } from "tsoa";
 import {
   BookInputDTO,
@@ -16,10 +17,12 @@ import {
 } from "../dto/book.dto";
 import { bookService } from "../services/book.service";
 import { BookCollectionOutputDTO } from "../dto/bookCollection.dto";
+import { checkPermissions } from "../middlewares/permission";
 
 @Route("books")
 @Tags("Books")
 export class BookController extends Controller {
+  
   @Get("/")
   public async getAllBooks(): Promise<BookOutputDTO[]> {
     return bookService.getAllBooks();
@@ -31,9 +34,13 @@ export class BookController extends Controller {
   }
 
   @Post("/")
+  @Security("jwt")
   public async postBooks(
     @Body() requestBody: BookInputDTO,
   ): Promise<BookOutputDTO> {
+
+    checkPermissions("book", "write");
+
     return bookService.createBook(
       requestBody.title,
       requestBody.publish_year,
@@ -42,11 +49,15 @@ export class BookController extends Controller {
     );
   }
 
+
   @Patch("{id}")
+  @Security("jwt")
   public async patchBook(
     @Path("id") id: number,
     @Body() requestBody: BookInputPatchDTO,
   ): Promise<BookOutputDTO> {
+    checkPermissions("book", "write");
+
     return bookService.updateBook(
       id,
       requestBody.title,
@@ -56,8 +67,13 @@ export class BookController extends Controller {
     );
   }
 
+
   @Delete("{id}")
+  @Security("jwt")
   public async deleteBook(@Path("id") id: number): Promise<void> {
+
+    checkPermissions("book", "delete");
+
     await bookService.deleteBook(id);
   }
 

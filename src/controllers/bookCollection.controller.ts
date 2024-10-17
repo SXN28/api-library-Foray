@@ -8,6 +8,7 @@ import {
   Post,
   Route,
   Tags,
+  Security,
 } from "tsoa";
 import {
   BookCollectionInputDTO,
@@ -15,9 +16,12 @@ import {
   BookCollectionOutputDTO,
 } from "../dto/bookCollection.dto";
 import { bookCollectionService } from "../services/bookCollection.service";
+import { checkPermissions } from "../middlewares/permission";
+
 @Route("book-collections")
 @Tags("BookCollections")
 export class BookCollectionController extends Controller {
+  
   @Get("/")
   public async getAllBooksCollection(): Promise<BookCollectionOutputDTO[]> {
     return bookCollectionService.getAllBookCollections();
@@ -31,9 +35,13 @@ export class BookCollectionController extends Controller {
   }
 
   @Post("/")
+  @Security("jwt")
   public async postBookCollection(
     @Body() requestBody: BookCollectionInputDTO,
   ): Promise<BookCollectionOutputDTO> {
+
+    checkPermissions("bookCollection", "write");
+
     return bookCollectionService.createBookCollection(
       requestBody.book_id,
       requestBody.available,
@@ -42,10 +50,13 @@ export class BookCollectionController extends Controller {
   }
 
   @Patch("{id}")
+  @Security("jwt")
   public async patchBookCollection(
     @Path("id") id: number,
     @Body() requestBody: BookCollectionInputPatchDTO,
   ): Promise<BookCollectionOutputDTO> {
+    checkPermissions("bookCollection", "write");
+
     return bookCollectionService.updateBookCollection(
       id,
       requestBody.book_id,
@@ -55,7 +66,10 @@ export class BookCollectionController extends Controller {
   }
 
   @Delete("{id}")
+  @Security("jwt")
   public async deleteBookCollection(@Path("id") id: number): Promise<void> {
+    checkPermissions("bookCollection", "delete");
+
     await bookCollectionService.deleteBookCollection(id);
   }
 }
