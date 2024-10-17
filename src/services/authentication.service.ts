@@ -1,31 +1,55 @@
-import { User } from "../models/user.model"; // Modèle Sequelize
-import jwt from "jsonwebtoken"; // Pour générer le JWT
-import { Buffer } from "buffer"; // Pour décoder Base64
+import { User } from "../models/user.model";
+import jwt from "jsonwebtoken";
+import { Buffer } from "buffer";
 import { notFound } from "../error/NotFoundError";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Clé secrète pour signer le token
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 export class AuthenticationService {
   public async authenticate(
     username: string,
     password: string
   ): Promise<string> {
-    // Recherche l'utilisateur dans la base de données
     const user = await User.findOne({ where: { username } });
 
     if (!user) {
       throw notFound("User");
     }
 
-    // Décoder le mot de passe stocké en base de données
     const decodedPassword = Buffer.from(user.password, "base64").toString(
       "utf-8"
     );
 
-    // Vérifie si le mot de passe est correct
     if (password === decodedPassword) {
-      // Si l'utilisateur est authentifié, on génère un JWT
-      const token = jwt.sign({ username: user.username }, JWT_SECRET, {
+
+      let permissions;
+      switch (username) {
+        case "admin":
+          permissions = {
+            author: ["read", "write", "delete"],
+            book: ["read", "write", "delete"],
+            bookCollection: ["read", "write", "delete"],
+          };
+          break;
+        case "gerant":
+          permissions = {
+            author: ["read", "write"],
+            book: ["read", "write"],
+            bookCollection: ["read"],
+          };
+          break;
+        case "utilisateur":
+          permissions = {
+            author: ["read"],
+            book: ["read"],
+            bookCollection: ["read"],
+          };
+          break;
+        default:
+          permissions = {};
+      }
+
+      const token = jwt.sign({ username: user.username, permissions: permissions }, JWT_SECRET, {
         expiresIn: "1h",
       });
       return token;
